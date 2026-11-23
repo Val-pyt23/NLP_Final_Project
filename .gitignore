@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+.streamlit/secrets.toml
+
+# Embedding bisa dibuat ulang dengan: python build_index.py
+# (embedding hadis ±82 MB, mendekati batas 100 MB per file GitHub)
+embeddings/

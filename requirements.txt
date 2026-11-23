@@ -1,0 +1,9 @@
+pandas
+numpy
+scikit-learn
+nltk
+rank_bm25
+ollama
+tqdm
+streamlit
+jupyter
