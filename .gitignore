@@ -8,3 +8,7 @@ venv/
 # Embedding bisa dibuat ulang dengan: python build_index.py
 # (embedding hadis ±82 MB, mendekati batas 100 MB per file GitHub)
 embeddings/
+
+# Paket upload Kaggle (dibuat ulang dari data/ dan islamqa_rag/) & cache model HuggingFace
+kaggle/*.zip
+hf_cache/

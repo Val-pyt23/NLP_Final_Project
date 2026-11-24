@@ -7,9 +7,35 @@ Keduanya bisa diberi ringkasan jawaban dari LLM (RAG).
 from .config import K_HADITH, K_QUESTIONS, K_QURAN, N_CONTEXT
 from .data import load_corpora
 from .generator import build_prompt, check_citations, generate
-from .retrievers import BM25Retriever, DenseRetriever
+from .retrievers import (BM25Retriever, DenseRetriever, HybridRetriever, RerankRetriever,
+                         TfidfRetriever)
 
-METHODS = ["bm25", "dense"]
+METHODS = ["tfidf", "bm25", "dense", "hybrid", "rerank"]
+
+_built = {}     # (metode, corpus, jumlah dokumen) -> retriever, agar hybrid/rerank memakai ulang BM25 & Dense
+
+
+def build_retriever(method, corpus_name, df):
+    """Membuat (atau memakai ulang) retriever `method` untuk satu corpus (df dari load_corpora)."""
+    key = (method, corpus_name, len(df))
+    if key not in _built:
+        _built[key] = _make_retriever(method, corpus_name, df)
+    return _built[key]
+
+
+def _make_retriever(method, corpus_name, df):
+    if method == "tfidf":
+        return TfidfRetriever(df.index, df["search_text"])
+    if method == "bm25":
+        return BM25Retriever(df.index, df["search_text"])
+    if method == "dense":
+        return DenseRetriever(corpus_name, df.index)
+    if method == "hybrid":
+        return HybridRetriever([build_retriever("bm25", corpus_name, df),
+                                build_retriever("dense", corpus_name, df)])
+    if method == "rerank":
+        return RerankRetriever(build_retriever("hybrid", corpus_name, df), df["search_text"])
+    raise ValueError(f"method harus salah satu dari {METHODS}")
 
 
 def shorten(text, n_words):
@@ -23,12 +49,7 @@ class IslamQAChatbot:
             raise ValueError(f"method harus salah satu dari {METHODS}")
         self.method = method
         self.corpora = corpora if corpora is not None else load_corpora()
-        self.retrievers = {}
-        for name, df in self.corpora.items():
-            if method == "bm25":
-                self.retrievers[name] = BM25Retriever(df.index, df["search_text"])
-            else:
-                self.retrievers[name] = DenseRetriever(name, df.index)
+        self.retrievers = {name: build_retriever(method, name, df) for name, df in self.corpora.items()}
 
     # ------------------------------------------------------------ retrieval
     def search(self, corpus, query, k):
