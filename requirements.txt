@@ -7,3 +7,5 @@ ollama
 tqdm
 streamlit
 jupyter
+matplotlib
+sentence-transformers  # retriever rerank (cross-encoder); torch versi CPU cukup

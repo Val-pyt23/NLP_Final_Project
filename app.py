@@ -27,7 +27,9 @@ st.markdown("""
 
 BOOKS = {"bukhari": "Sahih al-Bukhari", "tirmidhi": "Jami' at-Tirmidhi", "abudawud": "Sunan Abu Dawud",
          "nasai": "Sunan an-Nasa'i", "ibnmajah": "Sunan Ibn Majah"}
-METHOD_LABEL = {"bm25": "BM25 (leksikal)", "dense": "Dense (nomic-embed-text-v2-moe)"}
+METHOD_LABEL = {"tfidf": "TF-IDF (leksikal)", "bm25": "BM25 (leksikal)",
+                "dense": "Dense (nomic-embed-text-v2-moe)", "hybrid": "Hybrid (BM25 + Dense, RRF)",
+                "rerank": "Rerank (Hybrid + cross-encoder)"}
 
 
 # ---------------------------------------------------------------- load (sekali saja)
@@ -36,7 +38,7 @@ def get_corpora():
     return load_corpora()
 
 
-@st.cache_resource(show_spinner="Menyiapkan retriever (BM25 hadis butuh ±1 menit saat pertama) ...")
+@st.cache_resource(show_spinner="Menyiapkan retriever (TF-IDF/BM25 hadis butuh ±1 menit saat pertama) ...")
 def get_bot(method):
     return IslamQAChatbot(method, corpora=get_corpora())
 
@@ -57,7 +59,7 @@ def get_llms():
 # ---------------------------------------------------------------- sidebar: pengaturan model
 with st.sidebar:
     st.header("Model")
-    method = st.radio("Retriever", METHODS, format_func=METHOD_LABEL.get)
+    method = st.radio("Retriever", METHODS, index=METHODS.index("bm25"), format_func=METHOD_LABEL.get)
     llms = get_llms()
     if llms:
         llm = st.selectbox("LLM untuk ringkasan (RAG)", llms,
@@ -81,12 +83,12 @@ with st.sidebar:
     k_q = st.slider("Jumlah pertanyaan islamqa", 1, 10, K_QUESTIONS)
     k_quran = st.slider("Jumlah ayat", 1, 10, K_QURAN)
     k_hadith = st.slider("Jumlah hadis", 1, 10, K_HADITH)
-    st.caption("Sumber: islamqa.info (Character & Heart-Softeners), Al-Qur'an (Sahih International), "
+    st.caption("Sumber: islamqa.info (15.750 tanya-jawab, 11 kategori), Al-Qur'an (Sahih International), "
                "5 kitab hadis (fawazahmed0/hadith-api).")
 
 try:
     bot = get_bot(method)
-except (FileNotFoundError, ValueError) as e:
+except (FileNotFoundError, ValueError, ImportError) as e:
     st.error(str(e))
     st.stop()
 
